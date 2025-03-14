@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WWE Attitude Era inspired custom styles */
+@layer base {
+  body {
+    @apply bg-wwe-black text-white font-impact;
+    background-image: url('/src/assets/grunge-texture.png');
+    background-blend-mode: overlay;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-impact uppercase tracking-wider;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl text-wwe-red shadow-wwe;
+    text-shadow: 2px 2px 0 #000000;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl text-wwe-gold;
+    text-shadow: 1px 1px 0 #000000;
+  }
+}
+
+@layer components {
+  .wwe-container {
+    @apply container mx-auto px-4 py-6;
+    clip-path: polygon(0 0, 100% 0, 98% 100%, 2% 100%);
+  }
+
+  .wwe-card {
+    @apply bg-gradient-to-br from-zinc-800 to-black border-2 border-wwe-gold shadow-wwe overflow-hidden;
+    clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+  }
+
+  .wwe-button {
+    @apply bg-wwe-red text-white font-impact uppercase tracking-wider px-6 py-2 hover:bg-red-700 transition-all duration-300 transform hover:scale-105;
+    clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+    text-shadow: 1px 1px 0 #000000;
+  }
+
+  .wwe-nav-link {
+    @apply text-wwe-yellow hover:text-wwe-gold text-lg uppercase font-bold tracking-wider transition-all duration-300;
+    text-shadow: 1px 1px 0 #000000;
+  }
+
+  .wwe-table {
+    @apply w-full border-collapse;
+  }
+
+  .wwe-table th {
+    @apply bg-wwe-red text-white font-impact uppercase p-2 text-left;
+  }
+
+  .wwe-table td {
+    @apply border-b border-zinc-700 p-2;
+  }
+} 

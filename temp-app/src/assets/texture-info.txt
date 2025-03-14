@@ -1,0 +1,14 @@
+WWE ATTITUDE ERA TEXTURES NEEDED:
+
+In this directory, please add the following texture images to complete the WWE Attitude Era theme:
+
+1. grunge-texture.png - A dark grungy/scratched texture for background overlay
+2. metal-texture.png - A metallic/chrome texture for special elements
+
+For best results, find high-resolution textures with the following characteristics:
+- grunge-texture: Dark, distressed, scratched, weathered appearance with low contrast to work as an overlay
+- metal-texture: Chrome or steel appearance with reflective properties and strong highlights
+
+You can find suitable textures on stock photo sites or create them using image editing software.
+
+Without these textures, some styling effects may not display correctly. 

@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WWE Attitude Era-inspired custom styles */
+@layer base {
+  body {
+    @apply bg-dark text-light font-body;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-title uppercase tracking-wide;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 uppercase font-bold transition-all duration-200 transform hover:scale-105 border-2;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white border-primary shadow-harsh hover:shadow-none;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-dark border-secondary shadow-harsh hover:shadow-none;
+  }
+  
+  .card {
+    @apply bg-metal-gray p-4 border-t-4 border-primary shadow-harsh;
+  }
+  
+  .table-header {
+    @apply bg-primary text-white uppercase font-bold;
+  }
+  
+  .table-row-even {
+    @apply bg-metal-gray;
+  }
+  
+  .table-row-odd {
+    @apply bg-dark;
+  }
+}
+
+/* Custom animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0.5rem rgba(255, 30, 30, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 1rem rgba(255, 30, 30, 0.8));
+  }
+}
