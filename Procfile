@@ -1,1 +1,1 @@
-web: cd temp-app && npm install -g serve && serve -s build -l $PORT 
+web: cd temp-app && npx serve -s build -l ${PORT:-8080} 

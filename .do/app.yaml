@@ -5,10 +5,14 @@ services:
     branch: master
     deploy_on_push: true
     repo: jab1986/suoer-cool-betting-club
-  build_command: npm run build
-  run_command: cd temp-app && npm install -g serve && serve -s build
-  http_port: 3000
+  build_command: cd temp-app && npm install && npm run build
+  run_command: cd temp-app && npx serve -s build
+  http_port: 8080
   instance_size_slug: basic-xs
+  routes:
+  - path: /
   envs:
   - key: NODE_ENV
-    value: production 
+    value: production
+  - key: PORT
+    value: "8080" 
