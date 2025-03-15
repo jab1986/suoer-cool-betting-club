@@ -5,8 +5,8 @@
   "description": "WWE-themed betting club application",
   "main": "index.js",
   "scripts": {
-    "build": "cd temp-app && npm install && npm run build",
-    "start": "cd temp-app && npm install && npm start"
+    "build": "cd temp-app && npm install && npm run prod-build",
+    "start": "cd temp-app && npm run serve"
   },
   "engines": {
     "node": "18.x"
