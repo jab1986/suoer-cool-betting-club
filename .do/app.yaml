@@ -1,0 +1,14 @@
+name: super-cool-betting-club
+services:
+- name: web
+  github:
+    branch: master
+    deploy_on_push: true
+    repo: jab1986/suoer-cool-betting-club
+  build_command: npm run build
+  run_command: cd temp-app && npm install -g serve && serve -s build
+  http_port: 3000
+  instance_size_slug: basic-xs
+  envs:
+  - key: NODE_ENV
+    value: production 

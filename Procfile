@@ -1,0 +1,1 @@
+web: cd temp-app && npm install -g serve && serve -s build -l $PORT 
