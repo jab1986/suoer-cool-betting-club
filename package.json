@@ -1,0 +1,26 @@
+{
+  "name": "super-cool-betting-club",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WWE-themed betting club application",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd temp-app && npm run build",
+    "start": "cd temp-app && npm start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jab1986/suoer-cool-betting-club.git"
+  },
+  "keywords": [
+    "react",
+    "betting",
+    "wwe"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jab1986/suoer-cool-betting-club/issues"
+  },
+  "homepage": "https://github.com/jab1986/suoer-cool-betting-club#readme"
+} 
