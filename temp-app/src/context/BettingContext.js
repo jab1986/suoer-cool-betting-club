@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { players as samplePlayers, fixtures as sampleFixtures, bets as sampleBets, currentWeek, BET_TYPES, OUTCOMES } from '../data/sampleData';
 
 // Initial players data
 const initialPlayers = [
@@ -209,45 +210,70 @@ const initialBets = [
 // Create the context
 const BettingContext = createContext();
 
-export const BettingProvider = ({ children }) => {
-  // States for our data
-  const [players, setPlayers] = useState(() => {
-    const storedPlayers = localStorage.getItem('players');
-    return storedPlayers ? JSON.parse(storedPlayers) : initialPlayers;
-  });
-  
-  const [fixtures, setFixtures] = useState(() => {
-    const storedFixtures = localStorage.getItem('fixtures');
-    return storedFixtures ? JSON.parse(storedFixtures) : initialFixtures;
-  });
-  
-  const [bets, setBets] = useState(() => {
-    const storedBets = localStorage.getItem('bets');
-    return storedBets ? JSON.parse(storedBets) : initialBets;
-  });
-  
-  const [currentWeek, setCurrentWeek] = useState(() => {
-    const storedWeek = localStorage.getItem('currentWeek');
-    return storedWeek ? parseInt(storedWeek, 10) : 24;
-  });
+export const useBetting = () => useContext(BettingContext);
 
-  // Save to localStorage whenever data changes
+export const BettingProvider = ({ children }) => {
+  const [players, setPlayers] = useState({});
+  const [fixtures, setFixtures] = useState({});
+  const [bets, setBets] = useState([]);
+  const [week, setWeek] = useState(currentWeek);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Load data from localStorage or use sample data
   useEffect(() => {
-    localStorage.setItem('players', JSON.stringify(players));
-    localStorage.setItem('fixtures', JSON.stringify(fixtures));
-    localStorage.setItem('bets', JSON.stringify(bets));
-    localStorage.setItem('currentWeek', currentWeek.toString());
-  }, [players, fixtures, bets, currentWeek]);
+    try {
+      const storedPlayers = localStorage.getItem('players');
+      const storedFixtures = localStorage.getItem('fixtures');
+      const storedBets = localStorage.getItem('bets');
+      const storedWeek = localStorage.getItem('currentWeek');
+
+      if (storedPlayers && storedFixtures && storedBets && storedWeek) {
+        setPlayers(JSON.parse(storedPlayers));
+        setFixtures(JSON.parse(storedFixtures));
+        setBets(JSON.parse(storedBets));
+        setWeek(parseInt(storedWeek));
+      } else {
+        // Use sample data if no stored data
+        setPlayers(samplePlayers);
+        setFixtures(sampleFixtures);
+        setBets(sampleBets);
+        setWeek(currentWeek);
+        
+        // Save sample data to localStorage
+        localStorage.setItem('players', JSON.stringify(samplePlayers));
+        localStorage.setItem('fixtures', JSON.stringify(sampleFixtures));
+        localStorage.setItem('bets', JSON.stringify(sampleBets));
+        localStorage.setItem('currentWeek', currentWeek.toString());
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      setError('Failed to load data');
+      console.error('Error loading data:', err);
+      setLoading(false);
+    }
+  }, []);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem('players', JSON.stringify(players));
+      localStorage.setItem('fixtures', JSON.stringify(fixtures));
+      localStorage.setItem('bets', JSON.stringify(bets));
+      localStorage.setItem('currentWeek', week.toString());
+    }
+  }, [players, fixtures, bets, week, loading]);
 
   // Calculate player points based on bet outcomes
   useEffect(() => {
-    const updatedPlayers = players.map(player => {
-      const playerBets = bets.filter(bet => bet.playerId === player.id);
+    const updatedPlayers = Object.entries(players).map(([id, player]) => {
+      const playerBets = bets.filter(bet => bet.playerId === parseInt(id));
       const totalBets = playerBets.length;
       const correctBets = playerBets.filter(bet => bet.isCorrect === true).length;
       
       // Current week's picks calculation
-      const thisWeekPicksCount = playerBets.filter(bet => bet.week === currentWeek).length;
+      const thisWeekPicksCount = playerBets.filter(bet => bet.week === week).length;
       
       // Calculate points (1 point per correct bet)
       const points = correctBets;
@@ -261,27 +287,42 @@ export const BettingProvider = ({ children }) => {
       };
     });
     
-    setPlayers(updatedPlayers);
-  }, [bets, currentWeek]);
+    setPlayers(Object.fromEntries(updatedPlayers.map(player => [player.id, player])));
+  }, [bets, week]);
 
   // Function to add a new bet
-  const addBet = (playerId, fixtureId, betType, prediction) => {
-    const newBet = {
-      id: bets.length + 1,
-      playerId,
-      fixtureId,
-      betType,
-      prediction,
-      isCorrect: null,
-      week: currentWeek,
-    };
-    
-    setBets([...bets, newBet]);
+  const addBet = (playerName, fixtureId, betType, prediction) => {
+    try {
+      // Check if player has available picks
+      const player = players[playerName];
+      const weekBets = bets.filter(bet => bet.player === playerName && bet.week === week);
+      
+      if (weekBets.length >= player.picksPerWeek) {
+        throw new Error(`${playerName} has already used all available picks for this week`);
+      }
+      
+      // Create new bet
+      const newBet = {
+        id: `B${Date.now()}`,
+        player: playerName,
+        week: week,
+        fixtureId,
+        type: betType,
+        prediction,
+        result: null // Pending result
+      };
+      
+      setBets(prevBets => [...prevBets, newBet]);
+      return newBet;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   // Function to update fixture results
   const updateFixtureResult = (fixtureId, result, goalsHome, goalsAway) => {
-    const updatedFixtures = fixtures.map(fixture => {
+    const updatedFixtures = Object.entries(fixtures).map(([id, fixture]) => {
       if (fixture.id === fixtureId) {
         const btts = goalsHome > 0 && goalsAway > 0;
         const over25 = goalsHome + goalsAway > 2;
@@ -299,7 +340,7 @@ export const BettingProvider = ({ children }) => {
       return fixture;
     });
     
-    setFixtures(updatedFixtures);
+    setFixtures(Object.fromEntries(updatedFixtures.map(fixture => [fixture.id, fixture])));
     
     // Update bet outcomes based on fixture results
     const updatedBets = bets.map(bet => {
@@ -328,13 +369,13 @@ export const BettingProvider = ({ children }) => {
 
   // Function to advance to the next week
   const advanceToNextWeek = () => {
-    setCurrentWeek(prevWeek => prevWeek + 1);
+    setWeek(prevWeek => prevWeek + 1);
     
     // Logic for determining next week's picks based on this week's results
-    const updatedPlayers = players.map(player => {
+    const updatedPlayers = Object.entries(players).map(([id, player]) => {
       // Get player's bets from the current week
       const thisWeekBets = bets.filter(
-        bet => bet.playerId === player.id && bet.week === currentWeek
+        bet => bet.playerId === parseInt(id) && bet.week === week
       );
       
       // Count correct predictions this week
@@ -349,35 +390,46 @@ export const BettingProvider = ({ children }) => {
       };
     });
     
-    setPlayers(updatedPlayers);
+    setPlayers(Object.fromEntries(updatedPlayers.map(player => [player.id, player])));
   };
 
   // Function to add a new fixture
-  const addFixture = (homeTeam, awayTeam, date, time) => {
-    const newFixture = {
-      id: fixtures.length + 1,
-      homeTeam,
-      awayTeam,
-      date,
-      time,
-      week: currentWeek,
-      status: 'upcoming',
-      result: null,
-      goalsHome: null,
-      goalsAway: null,
-      btts: null,
-      over25: null,
-    };
-    
-    setFixtures([...fixtures, newFixture]);
+  const addFixture = (homeTeam, awayTeam, date) => {
+    try {
+      const newFixture = {
+        id: `F${Date.now()}`,
+        week: week,
+        homeTeam,
+        awayTeam,
+        date: new Date(date).toISOString(),
+        completed: false,
+        result: null
+      };
+      
+      setFixtures(prevFixtures => {
+        const updatedFixtures = {...prevFixtures};
+        
+        if (!updatedFixtures[week]) {
+          updatedFixtures[week] = [];
+        }
+        
+        updatedFixtures[week] = [...updatedFixtures[week], newFixture];
+        return updatedFixtures;
+      });
+      
+      return newFixture;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
   };
 
   const getPlayerById = (id) => {
-    return players.find(player => player.id === id);
+    return players[id];
   };
 
   const getFixtureById = (id) => {
-    return fixtures.find(fixture => fixture.id === id);
+    return fixtures[id];
   };
 
   const getPlayerBets = (playerId) => {
@@ -385,41 +437,269 @@ export const BettingProvider = ({ children }) => {
   };
 
   const getCurrentWeekFixtures = () => {
-    return fixtures.filter(fixture => fixture.week === currentWeek);
+    return Object.values(fixtures).filter(fixture => fixture.week === week);
   };
 
   const getCompletedFixtures = () => {
-    return fixtures.filter(fixture => fixture.status === 'completed');
+    return Object.values(fixtures).filter(fixture => fixture.status === 'completed');
+  };
+
+  // Complete a fixture and update results
+  const completeFixture = (fixtureId, homeScore, awayScore) => {
+    try {
+      let targetFixture = null;
+      let targetWeek = null;
+      
+      // Find the fixture
+      Object.entries(fixtures).forEach(([weekNum, fixturesList]) => {
+        const fixture = fixturesList.find(f => f.id === fixtureId);
+        if (fixture) {
+          targetFixture = fixture;
+          targetWeek = parseInt(weekNum);
+        }
+      });
+      
+      if (!targetFixture) {
+        throw new Error('Fixture not found');
+      }
+      
+      // Calculate results
+      const ftResult = 
+        homeScore > awayScore ? "HOME" : 
+        homeScore < awayScore ? "AWAY" : 
+        "DRAW";
+      
+      const bttsResult = homeScore > 0 && awayScore > 0 ? "YES" : "NO";
+      const overResult = homeScore + awayScore > 2.5 ? "YES" : "NO";
+      const handicapResult = Math.random() > 0.5 ? "HOME" : "AWAY"; // Simplified for sample data
+      
+      // Update fixture
+      setFixtures(prevFixtures => {
+        const updatedFixtures = {...prevFixtures};
+        const fixtureIndex = updatedFixtures[targetWeek].findIndex(f => f.id === fixtureId);
+        
+        updatedFixtures[targetWeek][fixtureIndex] = {
+          ...targetFixture,
+          completed: true,
+          result: {
+            homeScore,
+            awayScore,
+            FTR: ftResult,
+            BTTS: bttsResult,
+            OVER: overResult,
+            HANDICAP: handicapResult
+          }
+        };
+        
+        return updatedFixtures;
+      });
+      
+      // Update bet results
+      const affectedBets = bets.filter(bet => bet.fixtureId === fixtureId);
+      
+      if (affectedBets.length > 0) {
+        setBets(prevBets => {
+          return prevBets.map(bet => {
+            if (bet.fixtureId === fixtureId) {
+              const resultValue = {
+                FTR: ftResult,
+                BTTS: bttsResult,
+                OVER: overResult,
+                HANDICAP: handicapResult
+              }[bet.type];
+              
+              return {
+                ...bet,
+                result: resultValue === bet.prediction
+              };
+            }
+            return bet;
+          });
+        });
+        
+        // Update player points
+        setPlayers(prevPlayers => {
+          const updatedPlayers = {...prevPlayers};
+          
+          affectedBets.forEach(bet => {
+            const resultValue = {
+              FTR: ftResult,
+              BTTS: bttsResult,
+              OVER: overResult,
+              HANDICAP: handicapResult
+            }[bet.type];
+            
+            if (resultValue === bet.prediction) {
+              updatedPlayers[bet.player] = {
+                ...updatedPlayers[bet.player],
+                points: (updatedPlayers[bet.player].points || 0) + 1
+              };
+            }
+          });
+          
+          return updatedPlayers;
+        });
+      }
+      
+      return true;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  // Move to next week
+  const moveToNextWeek = () => {
+    try {
+      // Check if all fixtures for current week are completed
+      const currentFixtures = fixtures[week] || [];
+      const incompleteFixtures = currentFixtures.filter(f => !f.completed);
+      
+      if (incompleteFixtures.length > 0) {
+        throw new Error('Cannot advance to next week: There are incomplete fixtures');
+      }
+      
+      // Update picks per week for players based on this week's results
+      setPlayers(prevPlayers => {
+        const updatedPlayers = {...prevPlayers};
+        
+        Object.keys(updatedPlayers).forEach(playerName => {
+          const playerBets = bets.filter(bet => 
+            bet.player === playerName && 
+            bet.week === week &&
+            bet.result !== null
+          );
+          
+          const totalBets = playerBets.length;
+          const correctBets = playerBets.filter(bet => bet.result === true).length;
+          
+          // Double rule: If all picks correct (and at least 1 pick), get 2 picks next week, otherwise 1
+          updatedPlayers[playerName].picksPerWeek = 
+            (totalBets > 0 && correctBets === totalBets) ? 2 : 1;
+        });
+        
+        return updatedPlayers;
+      });
+      
+      // Advance to next week
+      setWeek(prev => prev + 1);
+      return true;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  // Get fixtures for current week
+  const getCurrentFixtures = () => {
+    return fixtures[week] || [];
+  };
+  
+  // Get bets for current week
+  const getCurrentBets = () => {
+    return bets.filter(bet => bet.week === week);
+  };
+  
+  // Get pending bets for a player
+  const getPendingBetsForPlayer = (playerName) => {
+    return bets.filter(bet => 
+      bet.player === playerName && 
+      bet.week === week && 
+      bet.result === null
+    );
+  };
+  
+  // Calculate remaining picks for a player this week
+  const getRemainingPicks = (playerName) => {
+    const player = players[playerName];
+    if (!player) return 0;
+    
+    const usedPicks = bets.filter(bet => 
+      bet.player === playerName && 
+      bet.week === week
+    ).length;
+    
+    return Math.max(0, player.picksPerWeek - usedPicks);
+  };
+
+  // Get player statistics
+  const getPlayerStatistics = (playerName) => {
+    const player = players[playerName];
+    if (!player) return null;
+    
+    const playerBets = bets.filter(bet => bet.player === playerName);
+    const completedBets = playerBets.filter(bet => bet.result !== null);
+    const wins = completedBets.filter(bet => bet.result === true).length;
+    
+    // Bets by week
+    const betsByWeek = {};
+    for (let w = 1; w <= week; w++) {
+      const weekBets = playerBets.filter(bet => bet.week === w);
+      const completedWeekBets = weekBets.filter(bet => bet.result !== null);
+      const weekWins = completedWeekBets.filter(bet => bet.result === true).length;
+      
+      betsByWeek[w] = {
+        total: weekBets.length,
+        completed: completedWeekBets.length,
+        wins: weekWins,
+        points: weekWins
+      };
+    }
+    
+    // Bets by type
+    const betsByType = {};
+    Object.keys(BET_TYPES).forEach(type => {
+      const typeBets = completedBets.filter(bet => bet.type === type);
+      const typeWins = typeBets.filter(bet => bet.result === true).length;
+      
+      betsByType[type] = {
+        total: typeBets.length,
+        wins: typeWins,
+        winRate: typeBets.length > 0 ? (typeWins / typeBets.length * 100).toFixed(1) : "0.0"
+      };
+    });
+    
+    return {
+      ...player,
+      totalBets: completedBets.length,
+      wins,
+      winRate: completedBets.length > 0 ? (wins / completedBets.length * 100).toFixed(1) : "0.0",
+      betsByWeek,
+      betsByType,
+      pendingBets: getPendingBetsForPlayer(playerName),
+      remainingPicks: getRemainingPicks(playerName)
+    };
   };
 
   return (
-    <BettingContext.Provider
-      value={{
-        players,
-        fixtures,
-        bets,
-        currentWeek,
-        addBet,
-        updateFixtureResult,
-        advanceToNextWeek,
-        addFixture,
-        getPlayerById,
-        getFixtureById,
-        getPlayerBets,
-        getCurrentWeekFixtures,
-        getCompletedFixtures,
-      }}
-    >
+    <BettingContext.Provider value={{
+      players,
+      fixtures,
+      bets,
+      week,
+      loading,
+      error,
+      addBet,
+      updateFixtureResult,
+      advanceToNextWeek,
+      addFixture,
+      getPlayerById,
+      getFixtureById,
+      getPlayerBets,
+      getCurrentFixtures,
+      getCompletedFixtures,
+      completeFixture,
+      moveToNextWeek,
+      getCurrentBets,
+      getPendingBetsForPlayer,
+      getRemainingPicks,
+      getPlayerStatistics,
+      betTypes: BET_TYPES,
+      outcomes: OUTCOMES
+    }}>
       {children}
     </BettingContext.Provider>
   );
 };
 
-// Custom hook to use the betting context
-export const useBetting = () => {
-  const context = useContext(BettingContext);
-  if (context === undefined) {
-    throw new Error('useBetting must be used within a BettingProvider');
-  }
-  return context;
-}; 
+export default BettingContext; 

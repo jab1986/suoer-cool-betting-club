@@ -1,11 +1,13 @@
 import React from 'react';
-import { Trophy, Medal, Star, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trophy, Medal, Star, TrendingUp, TrendingDown, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useBetting } from '../context/BettingContext';
 import { 
   WWEContainer, 
   WWECard, 
   WWETable,
+  WWEButton,
   Grid
 } from '../styles/components';
 
@@ -117,10 +119,37 @@ const TrendCell = styled.div`
   
   svg {
     color: ${props => 
-      props.trend === 'up' 
+      props.trend === 'UP' 
         ? props.theme.colors.green500 
         : props.theme.colors.red500
     };
+  }
+`;
+
+const PlayerRow = styled.tr`
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: ${props => props.theme.colors.zinc800};
+  }
+`;
+
+const ViewProfileButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: ${props => props.theme.colors.red};
+  color: white;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: #cc0000;
+    transform: scale(1.05);
   }
 `;
 
@@ -146,61 +175,21 @@ const StatsCard = styled(WWECard)`
 `;
 
 const Leaderboard = () => {
-  const { players, bets } = useBetting();
+  const { players, loading } = useBetting();
+  
+  if (loading) {
+    return <WWEContainer>Loading...</WWEContainer>;
+  }
+  
+  // Convert players object to array
+  const playersArray = Object.entries(players).map(([name, data]) => ({
+    name,
+    ...data
+  }));
   
   // Sort players by points (descending)
-  const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
+  const sortedPlayers = [...playersArray].sort((a, b) => b.points - a.points);
   
-  // Create enhanced player data for display
-  const playerStats = sortedPlayers.map(player => {
-    const playerBets = bets.filter(bet => bet.playerId === player.id);
-    const totalBets = playerBets.length;
-    const winCount = playerBets.filter(bet => bet.isCorrect === true).length;
-    const winRate = totalBets > 0 ? ((winCount / totalBets) * 100).toFixed(1) : '0.0';
-    
-    // Calculate streak
-    let currentStreak = 0;
-    let streakType = null;
-    
-    // Get player's bets in reverse chronological order
-    const chronoBets = [...playerBets]
-      .filter(bet => bet.isCorrect !== null)
-      .sort((a, b) => b.id - a.id);
-    
-    if (chronoBets.length > 0) {
-      streakType = chronoBets[0].isCorrect ? 'W' : 'L';
-      
-      for (let bet of chronoBets) {
-        if ((streakType === 'W' && bet.isCorrect) || 
-            (streakType === 'L' && !bet.isCorrect)) {
-          currentStreak++;
-        } else {
-          break;
-        }
-      }
-    }
-    
-    const streak = currentStreak > 0 ? `${streakType}${currentStreak}` : '-';
-    
-    // Get last 5 results
-    const lastFiveResults = chronoBets.slice(0, 5).map(bet => bet.isCorrect);
-    
-    // Determine trend
-    const trend = currentStreak >= 2 
-      ? (streakType === 'W' ? 'up' : 'down') 
-      : (player.points > 0 ? 'up' : 'neutral');
-    
-    return {
-      ...player,
-      winRate: `${winRate}%`,
-      wins: winCount,
-      total: totalBets,
-      streak,
-      lastFive: lastFiveResults,
-      trend
-    };
-  });
-
   return (
     <WWEContainer>
       <LeaderboardHeader>
@@ -225,11 +214,12 @@ const Leaderboard = () => {
                 <th>Streak</th>
                 <th>Last 5</th>
                 <th>Trend</th>
+                <th>Profile</th>
               </tr>
             </thead>
             <tbody>
-              {playerStats.map((player, index) => (
-                <tr key={player.id}>
+              {sortedPlayers.map((player, index) => (
+                <PlayerRow key={player.name}>
                   <td>
                     <RankCell 
                       color={
@@ -250,58 +240,68 @@ const Leaderboard = () => {
                       )}
                     </RankCell>
                   </td>
-                  <td><PlayerName>{player.name}</PlayerName></td>
-                  <td><PlayerPoints>{player.points}</PlayerPoints></td>
-                  <td>{player.wins}</td>
-                  <td>{player.total}</td>
-                  <td>{player.winRate}</td>
                   <td>
-                    {player.streak !== '-' && (
-                      <StreakLabel streak={player.streak}>{player.streak}</StreakLabel>
-                    )}
-                    {player.streak === '-' && '-'}
+                    <PlayerName>{player.name}</PlayerName>
                   </td>
                   <td>
-                    <div style={{ display: 'flex' }}>
-                      {player.lastFive.map((win, i) => (
-                        <ResultDot key={i} win={win} />
+                    <PlayerPoints>{player.points}</PlayerPoints>
+                  </td>
+                  <td>{player.wins || 0}</td>
+                  <td>{player.totalBets || 0}</td>
+                  <td>{player.winRate || '0.0%'}</td>
+                  <td>
+                    {player.streak ? (
+                      <StreakLabel streak={player.streak.type + player.streak.count}>
+                        {player.streak.type}{player.streak.count}
+                      </StreakLabel>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      {player.last5 && player.last5.map((result, i) => (
+                        <ResultDot key={i} win={result} />
                       ))}
-                      {player.lastFive.length === 0 && '-'}
+                      {(!player.last5 || player.last5.length === 0) && '-'}
                     </div>
                   </td>
                   <td>
                     <TrendCell trend={player.trend}>
-                      {player.trend === 'up' ? (
-                        <TrendingUp size={20} />
-                      ) : player.trend === 'down' ? (
-                        <TrendingDown size={20} />
+                      {player.trend === 'UP' ? (
+                        <TrendingUp size={18} />
+                      ) : player.trend === 'DOWN' ? (
+                        <TrendingDown size={18} />
                       ) : (
-                        <span>-</span>
+                        '-'
                       )}
                     </TrendCell>
                   </td>
-                </tr>
+                  <td>
+                    <ViewProfileButton to={`/player/${player.name}`}>
+                      <User size={14} />
+                      View
+                    </ViewProfileButton>
+                  </td>
+                </PlayerRow>
               ))}
             </tbody>
           </StyledTable>
         </TableContainer>
       </WWECard>
 
-      {/* Coming soon: more detailed stats */}
-      <Grid columns={1} tabletColumns={2} gap="2rem">
+      {/* Additional information cards */}
+      <Grid columns={1} tabletColumns={2} gap="1.5rem" style={{ marginTop: '2rem' }}>
         <StatsCard>
-          <Star size={48} />
+          <Star size={36} />
           <h2>Season Stats</h2>
-          <p>
-            Detailed player statistics coming soon!
-          </p>
+          <p>Detailed statistics will be available once more weeks are completed.</p>
         </StatsCard>
+        
         <StatsCard>
-          <TrendingUp size={48} />
+          <TrendingUp size={36} />
           <h2>Performance Trends</h2>
-          <p>
-            Detailed trend analysis coming soon!
-          </p>
+          <p>Player trends and performance analytics will be available as the season progresses.</p>
         </StatsCard>
       </Grid>
     </WWEContainer>

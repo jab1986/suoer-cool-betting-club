@@ -12,6 +12,7 @@ import Leaderboard from './pages/Leaderboard';
 import FixtureManager from './pages/FixtureManager';
 import AddFixture from './pages/AddFixture';
 import Profile from './pages/Profile';
+import PlayerProfile from './pages/PlayerProfile';
 
 // Context
 import { useTheme } from './context/ThemeContext';
@@ -37,6 +38,7 @@ function App() {
             <Route path="/fixtures" element={<FixtureManager />} />
             <Route path="/add-fixture" element={<AddFixture />} />
             <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/player/:playerId" element={<PlayerProfile />} />
           </Routes>
         </main>
         <Footer />
