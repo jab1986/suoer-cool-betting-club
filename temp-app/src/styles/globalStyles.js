@@ -1,6 +1,6 @@
 import { createGlobalStyle } from 'styled-components';
 
-// WWE Attitude Era theme colors
+// Theme colors
 export const WWETheme = {
   colors: {
     red: '#ff0000',

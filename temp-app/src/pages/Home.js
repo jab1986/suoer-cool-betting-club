@@ -147,7 +147,7 @@ const Home = () => {
       <HeroSection>
         <h1>SUPER COOL BETTING CLUB</h1>
         <p>
-          The ultimate platform for tracking bets with your friends in true WWE Attitude Era style!
+          The ultimate platform for tracking bets with your friends!
           Track your predictions, compete against friends, and claim your spot as the champion.
         </p>
         
@@ -167,18 +167,6 @@ const Home = () => {
           </Link>
         </ButtonsContainer>
       </HeroSection>
-      
-      <SectionTitle>CURRENT STANDINGS</SectionTitle>
-      
-      <PlayersList>
-        {sortedPlayers.map(player => (
-          <PlayerCard key={player.id} color={playerColors[player.name]}>
-            <h3>{player.name}</h3>
-            <p>Picks this week: {player.picksThisWeek}</p>
-            <div className="points">{player.points} PTS</div>
-          </PlayerCard>
-        ))}
-      </PlayersList>
       
       <Grid columns={1} tabletColumns={3} gap="2rem" style={{ marginTop: '4rem' }}>
         <FeatureCard>
