@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, X, Trophy, Calendar, User, Home, Plus } from 'lucide-react';
+import { Menu, X, Trophy, Calendar, User, Home, Plus, BarChart2 } from 'lucide-react';
 import styled from 'styled-components';
 import { WWENavLink, FlexRow } from '../styles/components';
 
@@ -93,6 +93,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Home', path: '/', icon: <Home size={20} /> },
     { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy size={20} /> },
+    { name: 'Stats', path: '/stats', icon: <BarChart2 size={20} /> },
     { name: 'Fixtures', path: '/fixtures', icon: <Calendar size={20} /> },
     { name: 'Add Fixture', path: '/add-fixture', icon: <Plus size={20} /> },
   ];

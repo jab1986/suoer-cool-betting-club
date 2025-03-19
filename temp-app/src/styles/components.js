@@ -6,7 +6,7 @@ export const WWEContainer = styled.div`
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 1rem;
   
   /* Make a less extreme clip-path to prevent content from being cut off */
   clip-path: polygon(0 0, 100% 0, 99% 100%, 1% 100%);
@@ -18,13 +18,12 @@ export const WWEContainer = styled.div`
 
 // Card component (replaces wwe-card)
 export const WWECard = styled.div`
-  background: linear-gradient(to bottom right, ${props => props.theme.colors.zinc800}, ${props => props.theme.colors.black});
-  border: 2px solid ${props => props.theme.colors.gold};
-  box-shadow: ${props => props.theme.shadows.wwe};
-  overflow: hidden;
-  clip-path: polygon(0 0, 100% 0, 98% 100%, 2% 100%);
+  background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+  border: 2px solid ${props => props.theme.colors.red};
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 1.5rem;
-  margin-bottom: 1rem;
+  border-radius: 0;
+  position: relative;
   
   /* Make sure content has enough room */
   min-height: 150px;

@@ -150,4 +150,4 @@ export const bets = [
     prediction: OUTCOMES.OVER,
     result: null
   }
-]; 
+];

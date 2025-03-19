@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Calendar, Users, ChevronRight } from 'lucide-react';
+import { Trophy, Calendar, Users, ChevronRight, BarChart2 } from 'lucide-react';
 import styled from 'styled-components';
 import { useBetting } from '../context/BettingContext';
 import { 
@@ -70,44 +70,6 @@ const FeatureCard = styled(WWECard)`
   }
 `;
 
-const PlayersList = styled.div`
-  margin-top: 2rem;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-`;
-
-const PlayerCard = styled.div`
-  background: linear-gradient(to bottom, ${props => props.color || '#3b82f6'}, rgba(0,0,0,0.7));
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-align: center;
-  border: 2px solid ${props => props.color || '#3b82f6'};
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  
-  h3 {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-    color: white;
-  }
-  
-  p {
-    color: #d4d4d8;
-    font-size: 0.875rem;
-  }
-  
-  .points {
-    font-size: 1.5rem;
-    color: ${props => props.theme.colors.gold};
-    font-weight: bold;
-    margin-top: 0.5rem;
-  }
-`;
-
 const CTASection = styled.div`
   margin-top: 4rem;
   text-align: center;
@@ -129,18 +91,7 @@ const CTASection = styled.div`
 `;
 
 const Home = () => {
-  const { players, currentWeek } = useBetting();
-  
-  // Sort players by points
-  const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
-  
-  // Player colors
-  const playerColors = {
-    'Sean': '#3b82f6', // blue
-    'Gaz': '#22c55e',  // green
-    'Joe': '#eab308',  // yellow
-    'Dean': '#a855f7'  // purple
-  };
+  const { week } = useBetting();
   
   return (
     <WWEContainer>
@@ -159,16 +110,23 @@ const Home = () => {
             </WWEButton>
           </Link>
           
+          <Link to="/stats">
+            <WWEButton>
+              <BarChart2 size={20} style={{ marginRight: '0.5rem' }} />
+              View Stats
+            </WWEButton>
+          </Link>
+          
           <Link to="/fixtures">
             <WWEButton>
               <Calendar size={20} style={{ marginRight: '0.5rem' }} />
-              Week {currentWeek} Fixtures
+              Week {week} Fixtures
             </WWEButton>
           </Link>
         </ButtonsContainer>
       </HeroSection>
       
-      <Grid columns={1} tabletColumns={3} gap="2rem" style={{ marginTop: '4rem' }}>
+      <Grid columns={1} tabletColumns={4} gap="2rem" style={{ marginTop: '4rem' }}>
         <FeatureCard>
           <Trophy size={48} />
           <h3>LEADERBOARD</h3>
@@ -176,6 +134,18 @@ const Home = () => {
           <Link to="/leaderboard">
             <FlexRow style={{ color: '#ff0000' }}>
               <span>View Standings</span>
+              <ChevronRight size={16} style={{ marginLeft: '0.25rem' }} />
+            </FlexRow>
+          </Link>
+        </FeatureCard>
+        
+        <FeatureCard>
+          <BarChart2 size={48} />
+          <h3>STATS CENTER</h3>
+          <p>Dive deep into detailed statistics, trends, and performance analytics.</p>
+          <Link to="/stats">
+            <FlexRow style={{ color: '#ff0000' }}>
+              <span>View Stats</span>
               <ChevronRight size={16} style={{ marginLeft: '0.25rem' }} />
             </FlexRow>
           </Link>
@@ -209,7 +179,7 @@ const Home = () => {
       <CTASection>
         <h2>READY TO PLACE YOUR BETS?</h2>
         <p>
-          Week {currentWeek} fixtures are now available. Make your predictions before the deadline and compete for the top spot on the leaderboard!
+          Week {week} fixtures are now available. Make your predictions before the deadline and compete for the top spot on the leaderboard!
         </p>
         <Link to="/fixtures">
           <WWEButton>

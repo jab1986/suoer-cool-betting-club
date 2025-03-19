@@ -175,17 +175,17 @@ const StatsCard = styled(WWECard)`
 `;
 
 const Leaderboard = () => {
-  const { players, loading } = useBetting();
+  const { players, loading, getPlayerStatistics } = useBetting();
   
   if (loading) {
     return <WWEContainer>Loading...</WWEContainer>;
   }
   
-  // Convert players object to array
-  const playersArray = Object.entries(players).map(([name, data]) => ({
-    name,
-    ...data
-  }));
+  // Get player statistics for each player
+  const playersArray = Object.keys(players).map(playerName => {
+    const stats = getPlayerStatistics(playerName);
+    return stats;
+  }).filter(Boolean); // Remove any null values
   
   // Sort players by points (descending)
   const sortedPlayers = [...playersArray].sort((a, b) => b.points - a.points);
@@ -193,7 +193,7 @@ const Leaderboard = () => {
   return (
     <WWEContainer>
       <LeaderboardHeader>
-        <h1>Leaderboard</h1>
+        <h1>LEADERBOARD</h1>
         <p>
           Season standings for the 4 players in the Super Cool Betting Club
         </p>
@@ -205,16 +205,16 @@ const Leaderboard = () => {
           <StyledTable>
             <thead>
               <tr>
-                <th style={{ width: '64px' }}>Rank</th>
-                <th>Player</th>
-                <th>Points</th>
-                <th>Wins</th>
-                <th>Total Bets</th>
-                <th>Win Rate</th>
-                <th>Streak</th>
-                <th>Last 5</th>
-                <th>Trend</th>
-                <th>Profile</th>
+                <th style={{ width: '64px' }}>RANK</th>
+                <th>PLAYER</th>
+                <th>POINTS</th>
+                <th>WINS</th>
+                <th>TOTAL BETS</th>
+                <th>WIN RATE</th>
+                <th>STREAK</th>
+                <th>LAST 5</th>
+                <th>TREND</th>
+                <th>PROFILE</th>
               </tr>
             </thead>
             <tbody>
@@ -246,9 +246,9 @@ const Leaderboard = () => {
                   <td>
                     <PlayerPoints>{player.points}</PlayerPoints>
                   </td>
-                  <td>{player.wins || 0}</td>
-                  <td>{player.totalBets || 0}</td>
-                  <td>{player.winRate || '0.0%'}</td>
+                  <td>{player.wins}</td>
+                  <td>{player.totalBets}</td>
+                  <td>{player.winRate}%</td>
                   <td>
                     {player.streak ? (
                       <StreakLabel streak={player.streak.type + player.streak.count}>
@@ -280,7 +280,7 @@ const Leaderboard = () => {
                   <td>
                     <ViewProfileButton to={`/player/${player.name}`}>
                       <User size={14} />
-                      View
+                      VIEW
                     </ViewProfileButton>
                   </td>
                 </PlayerRow>
@@ -294,14 +294,14 @@ const Leaderboard = () => {
       <Grid columns={1} tabletColumns={2} gap="1.5rem" style={{ marginTop: '2rem' }}>
         <StatsCard>
           <Star size={36} />
-          <h2>Season Stats</h2>
-          <p>Detailed statistics will be available once more weeks are completed.</p>
+          <h2>SEASON STATS</h2>
+          <p>Track your performance across different bet types and weekly results.</p>
         </StatsCard>
         
         <StatsCard>
           <TrendingUp size={36} />
-          <h2>Performance Trends</h2>
-          <p>Player trends and performance analytics will be available as the season progresses.</p>
+          <h2>PERFORMANCE TRENDS</h2>
+          <p>See who's hot and who's not with our detailed performance analytics.</p>
         </StatsCard>
       </Grid>
     </WWEContainer>

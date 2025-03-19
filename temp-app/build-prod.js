@@ -1,18 +1,28 @@
 const { execSync } = require('child_process');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
 console.log('Starting production build process...');
 
-// Run npm install
-console.log('Installing dependencies...');
-execSync('npm install', { stdio: 'inherit' });
+// Run the React build script
+try {
+  console.log('Building React application...');
+  execSync('npm run build', { stdio: 'inherit' });
+  console.log('React build completed successfully.');
+} catch (error) {
+  console.error('Error building React application:', error);
+  process.exit(1);
+}
 
-// Run build
-console.log('Building application...');
-execSync('npm run build', { stdio: 'inherit' });
+// Ensure the build directory exists
+const buildDir = path.join(__dirname, 'build');
+if (!fs.existsSync(buildDir)) {
+  console.error('Build directory not found. Build may have failed.');
+  process.exit(1);
+}
 
-console.log('Build completed successfully!');
+console.log('Production build completed successfully!');
+console.log('You can now run "npm run serve" to start the production server.');
 
 // Create a server.js file to serve the build
 const serverFilePath = path.join(__dirname, 'server.js');

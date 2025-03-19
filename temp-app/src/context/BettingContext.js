@@ -2,12 +2,36 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { players as samplePlayers, fixtures as sampleFixtures, bets as sampleBets, currentWeek, BET_TYPES, OUTCOMES } from '../data/sampleData';
 
 // Initial players data
-const initialPlayers = [
-  { id: 1, name: 'Gaz', points: 0, picksThisWeek: 1, totalWins: 0, totalBets: 0 },
-  { id: 2, name: 'Joe', points: 0, picksThisWeek: 1, totalWins: 0, totalBets: 0 },
-  { id: 3, name: 'Sean', points: 0, picksThisWeek: 1, totalWins: 0, totalBets: 0 },
-  { id: 4, name: 'Dean', points: 0, picksThisWeek: 1, totalWins: 0, totalBets: 0 },
-];
+const initialPlayers = {
+  Gaz: {
+    id: 1,
+    points: 0,
+    picksThisWeek: 1,
+    totalWins: 0,
+    totalBets: 0
+  },
+  Joe: {
+    id: 2,
+    points: 0,
+    picksThisWeek: 1,
+    totalWins: 0,
+    totalBets: 0
+  },
+  Sean: {
+    id: 3,
+    points: 0,
+    picksThisWeek: 1,
+    totalWins: 0,
+    totalBets: 0
+  },
+  Dean: {
+    id: 4,
+    points: 0,
+    picksThisWeek: 1,
+    totalWins: 0,
+    totalBets: 0
+  }
+};
 
 // Initial fixtures data
 const initialFixtures = [
@@ -213,7 +237,7 @@ const BettingContext = createContext();
 export const useBetting = () => useContext(BettingContext);
 
 export const BettingProvider = ({ children }) => {
-  const [players, setPlayers] = useState({});
+  const [players, setPlayers] = useState(initialPlayers);
   const [fixtures, setFixtures] = useState({});
   const [bets, setBets] = useState([]);
   const [week, setWeek] = useState(currentWeek);
@@ -235,6 +259,7 @@ export const BettingProvider = ({ children }) => {
         setWeek(parseInt(storedWeek));
       } else {
         // Use sample data if no stored data
+        console.log('Using sample data');
         setPlayers(samplePlayers);
         setFixtures(sampleFixtures);
         setBets(sampleBets);
@@ -428,8 +453,12 @@ export const BettingProvider = ({ children }) => {
     return players[id];
   };
 
-  const getFixtureById = (id) => {
-    return fixtures[id];
+  const getFixtureById = (fixtureId) => {
+    for (const weekFixtures of Object.values(fixtures)) {
+      const fixture = weekFixtures.find(f => f.id === fixtureId);
+      if (fixture) return fixture;
+    }
+    return null;
   };
 
   const getPlayerBets = (playerId) => {
@@ -624,79 +653,147 @@ export const BettingProvider = ({ children }) => {
 
   // Get player statistics
   const getPlayerStatistics = (playerName) => {
+    // Add debugging to see what's happening
+    console.log('Getting stats for player:', playerName);
+    console.log('Players object:', players);
+    
     const player = players[playerName];
-    if (!player) return null;
-    
-    const playerBets = bets.filter(bet => bet.player === playerName);
-    const completedBets = playerBets.filter(bet => bet.result !== null);
-    const wins = completedBets.filter(bet => bet.result === true).length;
-    
-    // Bets by week
-    const betsByWeek = {};
-    for (let w = 1; w <= week; w++) {
-      const weekBets = playerBets.filter(bet => bet.week === w);
-      const completedWeekBets = weekBets.filter(bet => bet.result !== null);
-      const weekWins = completedWeekBets.filter(bet => bet.result === true).length;
+    if (!player) {
+      console.log('Player not found in players object');
       
-      betsByWeek[w] = {
-        total: weekBets.length,
-        completed: completedWeekBets.length,
-        wins: weekWins,
-        points: weekWins
+      // Return default stats object instead of null
+      return {
+        points: 0,
+        totalBets: 0,
+        wins: 0,
+        winRate: 0,
+        streak: { type: '-', count: 0 },
+        trend: 'STABLE',
+        betTypeStats: {},
+        weeklyPerformance: [],
+        picksThisWeek: 1,
+        form: 0
       };
     }
-    
-    // Bets by type
-    const betsByType = {};
-    Object.keys(BET_TYPES).forEach(type => {
-      const typeBets = completedBets.filter(bet => bet.type === type);
-      const typeWins = typeBets.filter(bet => bet.result === true).length;
-      
-      betsByType[type] = {
+
+    // Get all bets for the player
+    const playerBets = bets.filter(bet => bet.playerId === player.id);
+    const completedBets = playerBets.filter(bet => bet.isCorrect !== null);
+    const recentBets = completedBets.slice(-3);
+
+    // Calculate basic stats
+    const totalBets = completedBets.length;
+    const wins = completedBets.filter(bet => bet.isCorrect).length;
+    const winRate = totalBets > 0 ? Math.round((wins / totalBets) * 100) : 0;
+
+    // Calculate streak
+    let currentStreak = { type: null, count: 0 };
+    for (let i = completedBets.length - 1; i >= 0; i--) {
+      const bet = completedBets[i];
+      if (currentStreak.type === null) {
+        currentStreak.type = bet.isCorrect ? 'W' : 'L';
+        currentStreak.count = 1;
+      } else if ((bet.isCorrect && currentStreak.type === 'W') || 
+                (!bet.isCorrect && currentStreak.type === 'L')) {
+        currentStreak.count++;
+      } else {
+        break;
+      }
+    }
+
+    // Calculate trend
+    const recentWinRate = recentBets.length > 0 
+      ? (recentBets.filter(bet => bet.isCorrect).length / recentBets.length) * 100 
+      : 0;
+    const trend = recentWinRate > winRate ? 'UP' : recentWinRate < winRate ? 'DOWN' : 'STABLE';
+
+    // Calculate bet type stats
+    const betTypeStats = {};
+    Object.values(BET_TYPES).forEach(type => {
+      const typeBets = completedBets.filter(bet => bet.betType === type);
+      const typeWins = typeBets.filter(bet => bet.isCorrect).length;
+      betTypeStats[type] = {
         total: typeBets.length,
         wins: typeWins,
-        winRate: typeBets.length > 0 ? (typeWins / typeBets.length * 100).toFixed(1) : "0.0"
+        winRate: typeBets.length > 0 ? Math.round((typeWins / typeBets.length) * 100) : 0
       };
     });
-    
+
+    // Calculate weekly performance
+    const weeklyPerformance = {};
+    playerBets.forEach(bet => {
+      if (bet.week) {
+        if (!weeklyPerformance[bet.week]) {
+          weeklyPerformance[bet.week] = {
+            total: 0,
+            wins: 0,
+            points: 0
+          };
+        }
+        if (bet.isCorrect !== null) {
+          weeklyPerformance[bet.week].total++;
+          if (bet.isCorrect) {
+            weeklyPerformance[bet.week].wins++;
+            weeklyPerformance[bet.week].points++;
+          }
+        }
+      }
+    });
+
+    // Calculate form (last 5 weeks)
+    const weekKeys = Object.keys(weeklyPerformance).map(Number).sort((a, b) => b - a);
+    const lastFiveWeeks = weekKeys.slice(0, 5).map(week => ({
+      week,
+      ...weeklyPerformance[week]
+    }));
+
+    const formValue = lastFiveWeeks.length > 0 
+      ? lastFiveWeeks.reduce((acc, week) => acc + week.points, 0) / lastFiveWeeks.length
+      : 0;
+
     return {
-      ...player,
-      totalBets: completedBets.length,
+      points: player.points,
+      totalBets,
       wins,
-      winRate: completedBets.length > 0 ? (wins / completedBets.length * 100).toFixed(1) : "0.0",
-      betsByWeek,
-      betsByType,
-      pendingBets: getPendingBetsForPlayer(playerName),
-      remainingPicks: getRemainingPicks(playerName)
+      winRate,
+      streak: currentStreak.type ? currentStreak : { type: '-', count: 0 },
+      trend,
+      betTypeStats,
+      weeklyPerformance: lastFiveWeeks,
+      picksThisWeek: player.picksThisWeek,
+      form: formValue
     };
   };
 
+  // Context value with all the functions and data
+  const contextValue = {
+    players,
+    fixtures,
+    bets,
+    week,
+    loading,
+    error,
+    BET_TYPES,
+    OUTCOMES,
+    getPlayerStatistics,
+    getFixtureById,
+    addBet,
+    updateFixtureResult,
+    advanceToNextWeek,
+    addFixture,
+    getPlayerById,
+    getPlayerBets,
+    getCurrentFixtures,
+    getCompletedFixtures,
+    completeFixture,
+    moveToNextWeek,
+    getCurrentBets,
+    getPendingBetsForPlayer,
+    getRemainingPicks
+  };
+
   return (
-    <BettingContext.Provider value={{
-      players,
-      fixtures,
-      bets,
-      week,
-      loading,
-      error,
-      addBet,
-      updateFixtureResult,
-      advanceToNextWeek,
-      addFixture,
-      getPlayerById,
-      getFixtureById,
-      getPlayerBets,
-      getCurrentFixtures,
-      getCompletedFixtures,
-      completeFixture,
-      moveToNextWeek,
-      getCurrentBets,
-      getPendingBetsForPlayer,
-      getRemainingPicks,
-      getPlayerStatistics,
-      betTypes: BET_TYPES,
-      outcomes: OUTCOMES
-    }}>
+    <BettingContext.Provider value={contextValue}>
       {children}
     </BettingContext.Provider>
   );
